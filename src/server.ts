@@ -7,41 +7,52 @@ const prisma = new PrismaClient();
 
 app.use(express.json());
 
-app.get("/movies", async (_,res) =>{
+app.get("/movies", async (_, res) => {
     const movies = await prisma.movie.findMany({
         orderBy: {
             title: "asc",
         },
-        include :{
-            genres:true,
+        include: {
+            genres: true,
             languages: true
         }
     });
     res.json(movies);
 });
 
-app.post("/movies", async (req, res)=> {
+app.post("/movies", async (req, res) => {
+    const { title, gente_id, language_id, oscar_count,
+        release_date } = req.body;
 
-const {title,gente_id, language_id, oscar_count,
-    release_date} = req.body;
+    try {
+        // case insensitive - se a busca for feita por jhon wick ou Jhon wick ou JHON WICK, o registro vai ser retornado na consulta
 
-try{
- await prisma.movie.create({
-       data: {
-           title: title,
-          genre_id: gente_id,
-          language_id: language_id,
-            oscar_count: oscar_count,
-            release_date: new Date(release_date)
-       }
-    });
-    }catch(error){
-        return res.status(500).send({message: "Falha ao cadastrar um filme"})
+        // case sensitive - se buscar por jhon wick e no banco estiver como John wick, não vai ser retornado na consulta 
+
+        const movieWithSameTitle = await prisma.movie.findFirst({
+            where: { title: { equals: title, mode: "insensitive" } },
+        });
+
+        if (movieWithSameTitle) {
+            return res.status(409).send({ messge: "já existe um filme cadastrado com esse filme" });
+        }
+
+        await prisma.movie.create({
+            data: {
+                title: title,
+                genre_id: gente_id,
+                language_id: language_id,
+                oscar_count: oscar_count,
+                release_date: new Date(release_date)
+            }
+        });
+    } catch (error) {
+        return res.status(500).send({ message: "Falha ao cadastrar um filme" })
     }
- res.status(201).send();
+    res.status(201).send();
 
 });
 
-app.listen(port, () =>{
+app.listen(port, () => {
     console.log(`Servidor em execução na porta ${port}`);
 });
