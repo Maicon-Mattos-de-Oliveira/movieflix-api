@@ -1,11 +1,14 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
+import swaggerUi from "swagger-ui-express";
+import swaggerDocument from "../swagger.json";
 
 const port = 3000;
 const app = express();
 const prisma = new PrismaClient();
 
 app.use(express.json());
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // GET /movies – Lista todos os filmes
 app.get("/movies", async (_, res) => {
